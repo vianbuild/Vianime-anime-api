@@ -33,7 +33,7 @@ const otakudesuInfo = {
     title: "Otakudesu",
     baseUrl: baseUrl.otakudesu,
     baseUrlPath: "/otakudesu",
-    message: "di vercel ada beberapa rute yang 403 forbidden, di local aman, mungkin non serverless juga aman",
+    message: "Jika 403 di Vercel: set OTAKUDESU_BASE_URL ke domain aktif, OTAKUDESU_COOKIE (cf_clearance), atau SCRAPER_HTTP_PROXY (proxy residensial).",
     ok: true,
     routesView: [
         {

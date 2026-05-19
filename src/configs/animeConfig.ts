@@ -2,8 +2,9 @@ const animeConfig = {
   PORT: 3001,
 
   baseUrl: {
-    otakudesu: "https://otakudesu.cloud",
-    samehadaku: "https://samehadaku.mba",
+    // Domain otakudesu sering pindah: cloud → best → blog. Override lewat env di Vercel.
+    otakudesu: process.env.OTAKUDESU_BASE_URL?.trim() || "https://otakudesu.blog",
+    samehadaku: process.env.SAMEHADAKU_BASE_URL?.trim() || "https://samehadaku.mba",
   },
 
   response: {
