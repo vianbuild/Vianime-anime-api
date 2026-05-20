@@ -26,7 +26,34 @@ function getProxyAgent(): HttpsProxyAgent<string> | undefined {
   return new HttpsProxyAgent(proxyUrl);
 }
 
+/** GET/HEAD ke root path situs sumber (mis. /home → baseUrl/). */
+function isColdTopLevelNavigation(
+  url: string,
+  ref: string,
+  axiosConfig?: AxiosRequestConfig
+): boolean {
+  const method = (axiosConfig?.method ?? "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") return false;
+
+  const headers = axiosConfig?.headers;
+  if (headers?.Referer || headers?.referer || headers?.Origin || headers?.origin) {
+    return false;
+  }
+
+  try {
+    const target = new URL(url);
+    const base = new URL(ref);
+    if (target.origin !== base.origin) return false;
+
+    const path = target.pathname.replace(/\/$/, "") || "";
+    return path === "";
+  } catch {
+    return false;
+  }
+}
+
 function mergeAxiosConfig(
+  url: string,
   ref: string,
   axiosConfig?: AxiosRequestConfig
 ): AxiosRequestConfig {
@@ -36,12 +63,13 @@ function mergeAxiosConfig(
     ref;
 
   const proxyAgent = getProxyAgent();
+  const coldNavigation = isColdTopLevelNavigation(url, ref, axiosConfig);
 
   return {
     ...DEFAULT_AXIOS_CONFIG,
     ...axiosConfig,
     headers: {
-      ...buildBrowserHeaders(referer, ref),
+      ...buildBrowserHeaders(referer, ref, { coldNavigation }),
       ...axiosConfig?.headers,
     },
     ...(proxyAgent ? { httpsAgent: proxyAgent, httpAgent: proxyAgent, proxy: false } : {}),
@@ -83,7 +111,10 @@ export async function wajikFetch(
   axiosConfig?: AxiosRequestConfig,
   callback?: (response: AxiosResponse) => void
 ): Promise<any> {
-  const config = mergeAxiosConfig(ref, { ...axiosConfig, method: axiosConfig?.method ?? "GET" });
+  const config = mergeAxiosConfig(url, ref, {
+    ...axiosConfig,
+    method: axiosConfig?.method ?? "GET",
+  });
 
   try {
     const response = await axios(url, config);
@@ -118,7 +149,7 @@ export async function getFinalUrl(
 ): Promise<string> {
   try {
     const response = await axios.head(url, {
-      ...mergeAxiosConfig(ref, axiosConfig),
+      ...mergeAxiosConfig(url, ref, axiosConfig),
       maxRedirects: 0,
       validateStatus: (status) => status >= 200 && status < 400,
     });
